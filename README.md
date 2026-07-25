@@ -60,7 +60,7 @@ It gives AI clients (like Claude Desktop) real-time visibility into your compute
 
 - **Python 3.10+**
 - `pip`
-- **Node.js** (optional, only needed for MCP Inspector)
+- **Node.js** (optional, only needed for MCP Inspector) [There is one more different way which was suggested to me i.e., [⚙️ Claude Desktop Integration](#️-claude-desktop-integration)]
 
 ---
 
