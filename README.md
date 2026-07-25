@@ -1,51 +1,232 @@
 # 🤖 Kenny — Jarvis Laptop Health MCP Server
 
-**Kenny** is a lightweight, local [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) server built in Python using `FastMCP` and `psutil`. It acts as an extensible "Jarvis-style" hardware diagnostic engine, allowing AI assistants (like Claude Desktop, Cursor, or local LLMs) to securely monitor and inspect your laptop's real-time hardware vitals and running processes.
+**Kenny** is a lightweight local [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) server built with Python, `FastMCP`, and `psutil`.
+
+It gives AI clients (like Claude Desktop) real-time visibility into your computer’s health — CPU usage, memory usage, and top memory-consuming processes — through MCP tools.
 
 ---
 
-## 🌟 Features
+## 📚 Table of Contents
 
-* **Live Vitals Diagnostic:** Exposes a tool (`get_system_vitals`) that retrieves real-time CPU usage percentages and memory consumption (Used vs. Total in GB).
-* **Process Inspection:** Exposes a tool (`get_top_processes`) that scans active operating system processes, sorts them by memory consumption, and returns the top resource hogs.
-* **Standard Protocol:** Communicates via standard I/O (`stdio`) following the official Model Context Protocol specification.
+- [✨ Features](#-features)
+- [🏗️ Architecture](#️-architecture)
+- [🛠️ Prerequisites](#️-prerequisites)
+- [🚀 Quickstart](#-quickstart)
+- [🧪 Local Testing](#-local-testing)
+- [🔍 Debugging with MCP Inspector](#-debugging-with-mcp-inspector)
+- [⚙️ Claude Desktop Integration](#️-claude-desktop-integration)
+- [🧰 Tools Offered](#-tools-offered)
+- [📂 Project Structure](#-project-structure)
+- [⚠️ Troubleshooting](#️-troubleshooting)
+- [🧭 Roadmap Ideas](#-roadmap-ideas)
+- [📄 License](#-license)
 
 ---
 
-## 🛠️ Project Architecture
+## ✨ Features
 
-+--------------------------+       MCP Protocol       +------------------------------------+|  AI Client / Host        | <----------------------> |  Kenny (MCP Server)                ||  (e.g., Claude Desktop)  |        (Stdio)           |  (server.py / FastMCP)             |+--------------------------+                          +------------------------------------+│▼+------------------------------------+|  System Vitals & Processes         ||  (psutil hardware bindings)        |+------------------------------------+
+- **Live Vitals Diagnostic**
+  - `get_system_vitals`
+  - Returns live CPU usage and RAM usage (used vs total in GB).
+
+- **Process Inspection**
+  - `get_top_processes`
+  - Returns top processes sorted by memory usage.
+
+- **MCP Standard Protocol**
+  - Runs over `stdio` using the MCP specification.
+  - Easy to plug into MCP-compatible clients.
+
 ---
 
-## 🚀 Quickstart & Setup
+## 🏗️ Architecture
 
-### Prerequisites
+```text
++------------------------+         MCP over stdio         +-----------------------------+
+| AI Client / Host       | <----------------------------> | Kenny MCP Server            |
+| (e.g., Claude Desktop) |                                | (FastMCP + psutil)          |
++------------------------+                                +-----------------------------+
+                                                                  |
+                                                                  v
+                                                        +----------------------+
+                                                        | Local OS Metrics     |
+                                                        | CPU / RAM / Processes|
+                                                        +----------------------+
+```
 
-* **Python 3.10+**
-* **Node.js** *(Optional, required if using the MCP Inspector for debugging)*
+---
 
-### 1. Installation
+## 🛠️ Prerequisites
 
-Clone your repository and install the required dependencies:
+- **Python 3.10+**
+- `pip`
+- **Node.js** (optional, only needed for MCP Inspector)
+
+---
+
+## 🚀 Quickstart
+
+### 1) Clone repository
 
 ```bash
-# Install required dependencies
+git clone https://github.com/JustKay1029/Kenny-desktop-health.git
+cd Kenny-desktop-health
+```
+
+### 2) Install dependencies
+
+```bash
 pip install mcp psutil
-2. Testing LocallyYou can test the raw hardware diagnostic script:Bashpython test_health.py
-To run the MCP server directly in stdio mode:Bashpython server.py
-Note: The server will listen silently for JSON-RPC messages over standard input/output.🧪 Debugging with MCP InspectorTo test the server visual interface without connecting a full AI client:Bashnpx @modelcontextprotocol/inspector python server.py
-Open the generated localhost link in your browser to manually execute the get_system_vitals and get_top_processes tools.⚙️ Client Integration (Claude Desktop)To connect Kenny to Claude Desktop, add the following entry to your claude_desktop_config.json file:Location on Windows: %APPDATA%\Claude\claude_desktop_config.jsonJSON{
+```
+
+---
+
+## 🧪 Local Testing
+
+Run standalone hardware diagnostics:
+
+```bash
+python test_health.py
+```
+
+Run the MCP server in stdio mode:
+
+```bash
+python server.py
+```
+
+> Note: In stdio mode, the server waits silently for JSON-RPC/MCP messages on standard input/output.
+
+---
+
+## 🔍 Debugging with MCP Inspector
+
+Use MCP Inspector for interactive local testing:
+
+```bash
+npx @modelcontextprotocol/inspector python server.py
+```
+
+Then open the localhost URL shown in your terminal and manually run:
+
+- `get_system_vitals`
+- `get_top_processes`
+
+---
+
+## ⚙️ Claude Desktop Integration
+
+Add Kenny to your Claude Desktop MCP config:
+
+```json
+{
   "mcpServers": {
     "kenny-jarvis": {
       "command": "python",
       "args": [
-        "C:\\path\\to\\your\\folder\\kenny\\server.py"
+        "C:\\path\\to\\Kenny-desktop-health\\server.py"
       ]
     }
   }
 }
-Restart Claude Desktop, and you will be able to ask natural language questions like:"Jarvis, check my laptop vitals.""What are the top 3 processes eating my RAM right now?"📂 File StructurePlaintextkenny/
-├── server.py        # Main MCP Server implementation using FastMCP
-├── test_health.py   # Standalone hardware diagnostic script
+```
+
+Then restart Claude Desktop.
+
+You can now ask things like:
+
+- “Jarvis, check my laptop vitals.”
+- “What are the top 3 processes eating my RAM right now?”
+
+---
+
+## 🧰 Tools Offered
+
+| Tool Name | Parameters | Description |
+|---|---|---|
+| `get_system_vitals` | None | Returns live CPU percentage and RAM usage (`used / total` in GB). |
+| `get_top_processes` | `count: int = 3` | Returns top memory-consuming processes. |
+
+### Example Output: `get_system_vitals`
+
+```json
+{
+  "cpu_percent": 18.4,
+  "memory": {
+    "used_gb": 9.72,
+    "total_gb": 15.83
+  }
+}
+```
+
+### Example Output: `get_top_processes`
+
+```json
+[
+  { "pid": 1244, "name": "chrome.exe", "memory_mb": 842.6 },
+  { "pid": 988, "name": "Code.exe", "memory_mb": 512.4 },
+  { "pid": 4320, "name": "python.exe", "memory_mb": 201.1 }
+]
+```
+
+---
+
+## 📂 Project Structure
+
+```text
+Kenny-desktop-health/
+├── server.py        # Main FastMCP server
+├── test_health.py   # Standalone local health test script
 └── README.md        # Project documentation
-🧰 Tools OfferedTool NameParametersDescriptionget_system_vitalsNoneReturns live CPU % and formatted RAM usage (Used / Total GB).get_top_processescount (int, default=3)Returns the top memory-hogging processes running on the machine with PID and memory %.
+```
+
+---
+
+## ⚠️ Troubleshooting
+
+### `ModuleNotFoundError: No module named 'mcp'`
+Install dependencies again:
+
+```bash
+pip install mcp psutil
+```
+
+If needed, use:
+
+```bash
+python -m pip install mcp psutil
+```
+
+### `python` command not found
+Use `python3` instead:
+
+```bash
+python3 server.py
+```
+
+Or add Python to PATH.
+
+### Claude cannot connect to server
+- Verify the path to `server.py` is correct.
+- Confirm `python` is available in your environment.
+- Restart Claude Desktop after updating config.
+- Run `python server.py` manually to ensure it starts without errors.
+
+### Process list appears incomplete
+Some processes may be restricted by OS/user permissions. Run with appropriate permissions if needed.
+
+---
+
+## 🧭 Roadmap Ideas
+
+- Add disk usage and temperature sensors (where supported)
+- Add per-core CPU metrics
+- Add historical snapshots/trend summaries
+- Export metrics as structured logs
+- Add optional alert thresholds (high RAM / high CPU)
+
+---
+
+## 📄 License
+
+Choose a license and add it here (for example: MIT).
